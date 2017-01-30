@@ -17,21 +17,29 @@ def shuffle_string(s):
         have to modify this in any way """
     return ''.join(random.sample(s, len(s)))
 
-# YOU WILL START YOUR IMPLEMENTATION FROM HERE DOWN ###
-
 
 def get_complement(nucleotide):
     """ Returns the complementary nucleotide
 
         nucleotide: a nucleotide (A, C, G, or T) represented as a string
         returns: the complementary nucleotide
+
+        No additional unit tests are needed because all possible cases were
+        implemented the same way, so if one works, all work.
     >>> get_complement('A')
     'T'
     >>> get_complement('C')
     'G'
     """
-    # TODO: implement this
-    pass
+    if nucleotide == 'A':
+        return 'T'
+    elif nucleotide == 'C':
+        return 'G'
+    elif nucleotide == 'G':
+        return 'C'
+    elif nucleotide == 'T':
+        return 'A'
+    return ''
 
 
 def get_reverse_complement(dna):
@@ -40,13 +48,21 @@ def get_reverse_complement(dna):
 
         dna: a DNA sequence represented as a string
         returns: the reverse complementary DNA sequence represented as a string
+
+        No additional unit tests are needed because everything goes through the
+        same code and since there are no conditionals, everything executes the
+        same way. Two doctests are sufficient.
     >>> get_reverse_complement("ATGCCCGCTTT")
     'AAAGCGGGCAT'
     >>> get_reverse_complement("CCGCGTTCA")
     'TGAACGCGG'
     """
-    # TODO: implement this
-    pass
+    sequence = ''
+    i = len(dna) - 1
+    while(i >= 0):
+        sequence += get_complement(dna[i])
+        i -= 1
+    return sequence
 
 
 def rest_of_ORF(dna):
@@ -57,13 +73,28 @@ def rest_of_ORF(dna):
 
         dna: a DNA sequence
         returns: the open reading frame represented as a string
+
+        I added a doctest for the condition that if there is no stop codon in
+        frame, it returns the original string. I am including this because it
+        is an important feature of the purpose of the function. I also added a
+        unit test for if the last codon is a stop codon, since that seems like
+        a reasonable possibility for a genome sequence.
     >>> rest_of_ORF("ATGTGAA")
     'ATG'
     >>> rest_of_ORF("ATGAGATAGG")
     'ATGAGA'
+    >>> rest_of_ORF("ATGCAGA")
+    'ATGCAGA'
+    >>> rest_of_ORF("ATGCAGTAG")
+    'ATGCAG'
     """
-    # TODO: implement this
-    pass
+    i = 3
+    while (i < len(dna) - 2):
+        if dna[i:i+3] == 'TAG' or dna[i:i+3] == 'TAA' or dna[i:i+3] == 'TGA':
+            stop = i
+            return dna[:stop]
+        i += 3
+    return dna
 
 
 def find_all_ORFs_oneframe(dna):
@@ -76,11 +107,28 @@ def find_all_ORFs_oneframe(dna):
 
         dna: a DNA sequence
         returns: a list of non-nested ORFs
+
+        I added a doctest in the case that an ATG is within the reading frame
+        within another sequence. I included this because am important feature
+        of this function is that it only returns non-nested ORFs.
     >>> find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
     ['ATGCATGAATGTAGA', 'ATGTGCCC']
+    >>> find_all_ORFs_oneframe("ATGCGAATGTAGCAGATGGTATAG")
+    ['ATGCGAATG', 'ATGGTA']
+    >>> find_all_ORFs_oneframe("ATGATGATGTAG")
+    ['ATGATGATG']
     """
-    # TODO: implement this
-    pass
+    oneframe_ORFs = []
+    i = 0
+    stopped = True
+    while(i < len(dna) - 2):
+        if dna[i:i+3] == 'ATG' and stopped:
+            oneframe_ORFs.append(rest_of_ORF(dna[i:]))
+            stopped = False
+        elif dna[i:i+3] == 'TAG' or dna[i:i+3] == 'TAA' or dna[i:i+3] == 'TGA':
+            stopped = True
+        i += 3
+    return oneframe_ORFs
 
 
 def find_all_ORFs(dna):
@@ -93,11 +141,23 @@ def find_all_ORFs(dna):
         dna: a DNA sequence
         returns: a list of non-nested ORFs
 
+        I added a doctest with ATGs in all the reading frames. This
+        is because it is important that the function goes through all the
+        reading frames correctly. I also added a doctest for if there is two
+        ORFs in one reading frame, because that also seemed possible with an
+        actual genome and I wanted to make sure it would do it right.
     >>> find_all_ORFs("ATGCATGAATGTAG")
     ['ATGCATGAATGTAG', 'ATGAATGTAG', 'ATG']
+    >>> find_all_ORFs("ATGAATGTATGGATGATGATGTAG")
+    ['ATGAATGTATGGATGATGATG', 'ATGTATGGA', 'ATGGATGATGATGTAG']
+    >>> find_all_ORFs("ATGCATGCCTAGCTGACCATGCCCTAG")
+    ['ATGCATGCC', 'ATGCCC', 'ATGCCTAGC']
     """
-    # TODO: implement this
-    pass
+    all_ORFs = []
+    all_ORFs += find_all_ORFs_oneframe(dna)
+    all_ORFs += find_all_ORFs_oneframe(dna[1:])
+    all_ORFs += find_all_ORFs_oneframe(dna[2:])
+    return all_ORFs
 
 
 def find_all_ORFs_both_strands(dna):
@@ -106,11 +166,17 @@ def find_all_ORFs_both_strands(dna):
 
         dna: a DNA sequence
         returns: a list of non-nested ORFs
+
+        I did not create another doctest because all this function is doing is
+        applying find_all_ORFs to two strands, and I felt that the doctest
+        given sufficed.
     >>> find_all_ORFs_both_strands("ATGCGAATGTAGCATCAAA")
     ['ATGCGAATG', 'ATGCTACATTCGCAT']
     """
-    # TODO: implement this
-    pass
+    both_ORFs = []
+    both_ORFs += find_all_ORFs(dna)
+    both_ORFs += find_all_ORFs(get_reverse_complement(dna))
+    return both_ORFs
 
 
 def longest_ORF(dna):
@@ -161,6 +227,16 @@ def gene_finder(dna):
     # TODO: implement this
     pass
 
+
 if __name__ == "__main__":
     import doctest
-    doctest.testmod()
+    doctest.run_docstring_examples(get_complement, globals(), verbose=True)
+    doctest.run_docstring_examples(get_reverse_complement, globals(),
+                                   verbose=True)
+    doctest.run_docstring_examples(rest_of_ORF, globals(),
+                                   verbose=True)
+    doctest.run_docstring_examples(find_all_ORFs_oneframe, globals(),
+                                   verbose=True)
+    doctest.run_docstring_examples(find_all_ORFs, globals(), verbose=True)
+    doctest.run_docstring_examples(find_all_ORFs_both_strands, globals(),
+                                   verbose=True)
